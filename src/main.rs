@@ -1,5 +1,5 @@
 mod logfile_parser;
-
+use logfile_parser::read;
 // Since requests are stated that only to be GET,POST,PUT,DELETE
 // I added an undefined state where there are errors in the request type.
 // I got an error there since I forgot to derive Debug
@@ -20,9 +20,11 @@ fn main() {
     // I did not give a request type to my initial request on purpose, it gave the default UNDEFINED request since I stated it as a default. This is also good sign in case of faulty logs.
     let initiallog: Log = LogBuilder::new()
         .settimestamp("bora.arseven@gmail.com".parse().unwrap())
-        .setpw("122134".parse().unwrap())
+        .setstatuscode("404".parse().unwrap())
         .build();
     println!("{:?}", initiallog);
+    println!("-----------------");
+    logfile_parser::read("log.txt").expect("FILE CANNOT CANNOT BE READED: Please check the file path.");
 }
 
 #[derive(Debug)]

@@ -1,5 +1,4 @@
 mod logfile_parser;
-use logfile_parser::read;
 // Since requests are stated that only to be GET,POST,PUT,DELETE
 // I added an undefined state where there are errors in the request type.
 // I got an error there since I forgot to derive Debug

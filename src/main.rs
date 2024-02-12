@@ -16,18 +16,13 @@ enum Request {
 // So, I am using my old builder pattern trial project as a starting template, with changes.
 // This might reduce the performance since we are calling more functions per log, but generally IO is the real speed limiter when we are accessing files. So the performance affect might be ignorable.
 fn main() {
-    // I did not give a request type to my initial request on purpose, it gave the default UNDEFINED request since I stated it as a default. This is also good sign in case of faulty logs.
-    let initiallog: Log = LogBuilder::new()
-        .settimestamp("bora.arseven@gmail.com".parse().unwrap())
-        .setstatuscode("404".parse().unwrap())
-        .build();
-    println!("{:?}", initiallog);
-    println!("-----------------");
-    logfile_parser::read("log.txt").expect("FILE CANNOT CANNOT BE READED: Please check the file path.");
+    let logs = logfile_parser::read("log.txt")
+        .expect("FILE CANNOT CANNOT BE READED: Please check the file path.");
+    println!("{:?}", logs);
 }
 
 #[derive(Debug)]
-struct Log {
+pub struct Log {
     timestamp: String,
     request_type: Request,
     endpoint_url: String,
@@ -90,13 +85,17 @@ impl LogBuilder {
         self.status_code = status_code;
         self
     }
+    fn setresponsetime(&mut self, responsetime: i32) -> &mut Self {
+        self.responsetime = responsetime;
+        self
+    }
     fn build(&mut self) -> Log {
         Log {
             request_type: self.request_type.clone(),
             timestamp: self.timestamp.clone(),
             endpoint_url: self.endpoint_url.clone(),
-            status_code: self.status_code,
-            responsetime: self.responsetime,
+            status_code: self.status_code.clone(),
+            responsetime: self.responsetime.clone(),
         }
     }
 }

@@ -1,4 +1,7 @@
 mod logfile_parser;
+mod data_analysis;
+mod unit_tests;
+
 // Since requests are stated that only to be GET,POST,PUT,DELETE
 // I added an undefined state where there are errors in the request type.
 // I got an error there since I forgot to derive Debug
@@ -89,6 +92,7 @@ impl LogBuilder {
         self.responsetime = responsetime;
         self
     }
+    // I am not sure about clone(), maybe it might be a bad practice, I need a feedback here.
     fn build(&mut self) -> Log {
         Log {
             request_type: self.request_type.clone(),

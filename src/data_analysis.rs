@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufWriter, Write};
-use std::ops::ControlFlow::Break;
-use std::path::{Path, PathBuf};
+
 use crate::logfile_parser::{get_logfile_path, Log};
 use crate::logfile_parser::Request;
 // I might be able to use multithreading since our references are not mutable since we are not reading.

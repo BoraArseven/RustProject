@@ -1,7 +1,7 @@
+use crate::data_analysis::{errors, performance, print_all_logs, request_summary};
 use crate::logfile_parser::{read, Log};
 use std::io;
-use std::io::{BufRead};
-use crate::data_analysis::{errors, performance, request_summary};
+use std::io::BufRead;
 
 mod data_analysis;
 mod logfile_parser;
@@ -20,7 +20,6 @@ fn main() {
         // Read the user input
         let mut input = String::new();
         io::stdin().lock().read_line(&mut input).unwrap();
-
         // Remove the newline character
         input.pop();
         // if nothing as input, ignore
@@ -37,13 +36,15 @@ fn main() {
             }
         };
         println!("{:?}", logs);
-        println!("logfile is successfully selected, please select the operation to do: \n \
+        println!(
+            "Logfile is successfully selected, please select the operation to do: \n \
         Operations: 'Summary', 'Errors' , 'Performance', 'List_ALl'
         1 for Summary: how many times each type of request occurred.
         2 for Errors: List all of the errors group by endpoint url.
         3 for Performance Metrics: Average response time for each endpoint.
         4 to print all logs
-        ");
+        "
+        );
 
         loop {
             let mut selectedcommand = String::new();
@@ -52,14 +53,16 @@ fn main() {
             match selectedcommand.as_str() {
                 //since we are just investigating and analysing without changing the actual data, we just passed the address reference of logs to the functions.
                 // In short, compiler prevented me to change the actual data accidentally inside my functions.
-                "1" => {request_summary(&logs)}
-                "2" => {errors(&logs)}
-                "3" => {performance(&logs)}
+                "1" => request_summary(&logs),
+                "2" => errors(&logs),
+                "3" => performance(&logs),
+                "4" => print_all_logs(&logs),
                 // give a feedback and skip the remaining lines, to ask  a new command.
-                _ => {println!("invalid input, please type 1, 2 or 3.");
-                        continue}
+                _ => {
+                    println!("invalid input, please type 1, 2 or 3.");
+                    continue;
+                }
             }
         }
-
     }
 }

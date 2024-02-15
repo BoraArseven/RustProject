@@ -7,3 +7,7 @@ pub(crate) fn request_summary(logs: &Vec<Log>){
 pub(crate) fn errors(logs: &Vec<Log>){
 
 }
+
+pub(crate) fn performance(logs: &Vec<Log>){
+
+}

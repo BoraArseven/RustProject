@@ -26,9 +26,8 @@ pub fn read(path: &str) -> io::Result<Vec<Log>> {
         let terms: Vec<&str> = line.split_whitespace().collect();
 
         // Assuming LogBuilder and Log types are defined elsewhere
-        let entry: Log = LogBuilder::new()
-            .settimestamp(if terms.len() > 1 { Some([terms[0], terms[1]].join(" ")) } else { None })
-            .setrequest(match terms.get(2).unwrap().to_uppercase() {
+        let entry: Log = LogBuilder::new().set_time_stamp(if terms.len() > 1 { Some([terms[0], terms[1]].join(" ")) } else { None })
+            .set_request_type(match terms.get(2){
                 Some(&"GET") => Some(Request::GET),
                 Some(&"POST") => Some(Request::POST),
                 Some(&"DELETE") => Some(Request::DELETE),
@@ -36,9 +35,9 @@ pub fn read(path: &str) -> io::Result<Vec<Log>> {
                 // If no type is defined, safe default undefined should act.
                 _ => None,
             })
-            .setendpoint_url(terms.get(3).map(|s| s.to_string()))
-            .setstatuscode(terms.get(4).and_then(|s| s.parse::<i16>().ok()))
-            .setresponsetime(terms.get(5).and_then(|s| s.parse::<i32>().ok()))
+            .set_endpoint_url(terms.get(3).map(|s| s.to_string()))
+            .set_status_code(terms.get(4).and_then(|s| s.parse::<i16>().ok()))
+            .set_response_time(terms.get(5).and_then(|s| s.parse::<i32>().ok()))
             .build();
         logs.push(entry);
     }
@@ -58,7 +57,7 @@ pub struct Log {
     endpoint_url: String,
     // I could use unsigned but I wasn't sure
     status_code: i16,
-    responsetime: i32,
+    response_time: i32,
 }
 struct LogBuilder {
     timestamp: String,
@@ -66,7 +65,7 @@ struct LogBuilder {
     endpoint_url: String,
     // Since there are a lot of status codes, I will use integer and check a range.
     status_code: i16,
-    responsetime: i32,
+    response_time: i32,
 }
 
 impl Log {
@@ -75,14 +74,14 @@ impl Log {
         request_type: Request,
         endpoint_url: String,
         status_code: i16,
-        responsetime: i32,
+        response_time: i32,
     ) -> LogBuilder {
         LogBuilder {
             timestamp,
             request_type,
             endpoint_url,
             status_code,
-            responsetime,
+            response_time,
         }
     }
 }
@@ -95,28 +94,28 @@ impl LogBuilder {
             request_type: Request::UNDEFINED,
             endpoint_url: "Error".parse().unwrap(),
             status_code: -1,
-            responsetime: -1,
+            response_time: -1,
         }
     }
     //setters for each field
-    fn settimestamp(&mut self, timestamp: Option<String>) -> &mut Self {
+    fn set_time_stamp(&mut self, timestamp: Option<String>) -> &mut Self {
         self.timestamp = timestamp.unwrap();
         self
     }
-    fn setrequest(&mut self, request_type: Option<Request>) -> &mut Self {
+    fn set_request_type(&mut self, request_type: Option<Request>) -> &mut Self {
         self.request_type = request_type.unwrap();
         self
     }
-    fn setendpoint_url(&mut self, endpoint_url: Option<String>) -> &mut Self {
+    fn set_endpoint_url(&mut self, endpoint_url: Option<String>) -> &mut Self {
         self.endpoint_url = endpoint_url.unwrap();
         self
     }
-    fn setstatuscode(&mut self, status_code: Option<i16>) -> &mut Self {
+    fn set_status_code(&mut self, status_code: Option<i16>) -> &mut Self {
         self.status_code = status_code.unwrap();
         self
     }
-    fn setresponsetime(&mut self, responsetime: Option<i32>) -> &mut Self {
-        self.responsetime = responsetime.unwrap();
+    fn set_response_time(&mut self, response_time: Option<i32>) -> &mut Self {
+        self.response_time = response_time.unwrap();
         self
     }
     // I am not sure about clone(), maybe it might be a bad practice, I need a feedback here.
@@ -126,7 +125,7 @@ impl LogBuilder {
             timestamp: self.timestamp.clone(),
             endpoint_url: self.endpoint_url.clone(),
             status_code: self.status_code.clone(),
-            responsetime: self.responsetime.clone(),
+            response_time: self.response_time.clone(),
         }
     }
 }

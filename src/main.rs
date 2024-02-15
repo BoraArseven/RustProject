@@ -1,5 +1,5 @@
 use crate::data_analysis::{errors, performance, print_all_logs, request_summary};
-use crate::logfile_parser::{read};
+use crate::logfile_parser::read;
 use std::io;
 use std::io::BufRead;
 

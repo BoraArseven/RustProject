@@ -1,7 +1,7 @@
 use crate::logfile_parser::{read, Log};
 use std::io;
 use std::io::{BufRead};
-use crate::data_analysis::request_summary;
+use crate::data_analysis::{errors, request_summary};
 
 mod data_analysis;
 mod logfile_parser;
@@ -52,7 +52,9 @@ fn main() {
             match selectedcommand.as_str() {
                 //since we are just investigating and analysing without changing the actual data, we just passed the address reference of logs to the functions.
                 // In short, compiler prevented me to change the actual data accidentally inside my functions.
-                "2" => {request_summary(&logs)}
+                "1" => {request_summary(&logs)}
+                "2" => {errors(&logs)}
+
                 _ => {println!("invalid input, please type 1, 2 or 3.");
                         continue}
             }

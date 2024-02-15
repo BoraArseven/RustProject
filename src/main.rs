@@ -1,105 +1,62 @@
-mod logfile_parser;
+use crate::logfile_parser::{read, Log};
+use std::io;
+use std::io::{BufRead};
+use crate::data_analysis::request_summary;
+
 mod data_analysis;
+mod logfile_parser;
 mod unit_tests;
 
 // Since requests are stated that only to be GET,POST,PUT,DELETE
 // I added an undefined state where there are errors in the request type.
 // I got an error there since I forgot to derive Debug
-#[derive(Debug, Clone)]
-enum Request {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    UNDEFINED,
-}
 
-// Disclaimer: Before this project, the biggest project I did is implementation of builder pattern, and implementation of structs etc (I just jumped to the multithreading since I found an interesting problem). I even use enums in this project first time. ()
+// Disclaimer: Before this project, the biggest project I did is implementation of builder pattern, and implementation of structs etc. (I just jumped to the multithreading since I found an interesting problem). I even use enums in this project first time. ()
 // I have found that builder pattern is a good match for that logfile project, since I think it is valuable to be maintainable, so with builder pattern we can change the structure of the logs easier.
 // So, I am using my old builder pattern trial project as a starting template, with changes.
 // This might reduce the performance since we are calling more functions per log, but generally IO is the real speed limiter when we are accessing files. So the performance affect might be ignorable.
 fn main() {
-    let logs = logfile_parser::read("log.txt")
-        .expect("FILE CANNOT CANNOT BE READED: Please check the file path.");
-    println!("{:?}", logs);
-}
+    loop {
+        // Read the user input
+        let mut input = String::new();
+        io::stdin().lock().read_line(&mut input).unwrap();
 
-#[derive(Debug)]
-pub struct Log {
-    timestamp: String,
-    request_type: Request,
-    endpoint_url: String,
-    // I could use unsigned but I wasn't sure
-    status_code: i16,
-    responsetime: i32,
-}
-struct LogBuilder {
-    timestamp: String,
-    request_type: Request,
-    endpoint_url: String,
-    // Since there are a lot of status codes, I will use integer and check a range.
-    status_code: i16,
-    responsetime: i32,
-}
+        // Remove the newline character
+        input.pop();
+        // if nothing as input, ignore
+        match input.as_str() {
+            "" => continue,
+            _ => {}
+        };
+        // Call your function and match the result
+        let logs = match read(&input) {
+            Ok(logs) => logs, // Return the logs vector from the match
+            Err(e) => {
+                println!("Error: {}", e);
+                continue; // Skip the rest of the loop and ask for another input
+            }
+        };
+        println!("{:?}", logs);
+        println!("logfile is successfully selected, please select the operation to do: \n \
+        Operations: 'Summary', 'Errors' , 'Performance', 'List_ALl'
+        1 for Summary: how many times each type of request occurred.
+        2 for Errors: List all of the errors group by endpoint url.
+        3 for Performance Metrics: Average response time for each endpoint.
+        4 for print all logs
+        ");
 
-impl Log {
-    fn new(
-        timestamp: String,
-        request_type: Request,
-        endpoint_url: String,
-        status_code: i16,
-        responsetime: i32,
-    ) -> LogBuilder {
-        LogBuilder {
-            timestamp,
-            request_type,
-            endpoint_url,
-            status_code,
-            responsetime,
+        loop {
+            let mut selectedcommand = String::new();
+            io::stdin().lock().read_line(&mut selectedcommand).unwrap();
+            selectedcommand.pop();
+            match selectedcommand.as_str() {
+                //since we are just investigating and analysing without changing the actual data, we just passed the address reference of logs to the functions.
+                // In short, compiler prevented me to change the actual data accidentally inside my functions.
+                "2" => {request_summary(&logs)}
+                _ => {println!("invalid input, please type 1, 2 or 3.");
+                        continue}
+            }
         }
-    }
-}
 
-impl LogBuilder {
-    pub fn new(/* ... */) -> LogBuilder {
-        // Set the default values for log, which can be assumed as "SAFE DEFAULT" so if one of the fields are empty, it will automatically replaces it with safe defaults.
-        LogBuilder {
-            timestamp: "None".parse().unwrap(),
-            request_type: Request::UNDEFINED,
-            endpoint_url: "Error".parse().unwrap(),
-            status_code: -1,
-            responsetime: -1,
-        }
-    }
-    //setters for each field
-    fn settimestamp(&mut self, timestamp: String) -> &mut Self {
-        self.timestamp = timestamp;
-        self
-    }
-    fn setrequest(&mut self, request_type: Request) -> &mut Self {
-        self.request_type = request_type;
-        self
-    }
-    fn setendpoint_url(&mut self, endpoint_url: String) -> &mut Self {
-        self.endpoint_url = endpoint_url;
-        self
-    }
-    fn setstatuscode(&mut self, status_code: i16) -> &mut Self {
-        self.status_code = status_code;
-        self
-    }
-    fn setresponsetime(&mut self, responsetime: i32) -> &mut Self {
-        self.responsetime = responsetime;
-        self
-    }
-    // I am not sure about clone(), maybe it might be a bad practice, I need a feedback here.
-    fn build(&mut self) -> Log {
-        Log {
-            request_type: self.request_type.clone(),
-            timestamp: self.timestamp.clone(),
-            endpoint_url: self.endpoint_url.clone(),
-            status_code: self.status_code.clone(),
-            responsetime: self.responsetime.clone(),
-        }
     }
 }

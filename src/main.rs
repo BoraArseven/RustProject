@@ -1,7 +1,7 @@
 use crate::logfile_parser::{read, Log};
 use std::io;
 use std::io::{BufRead};
-use crate::data_analysis::{errors, request_summary};
+use crate::data_analysis::{errors, performance, request_summary};
 
 mod data_analysis;
 mod logfile_parser;
@@ -42,7 +42,7 @@ fn main() {
         1 for Summary: how many times each type of request occurred.
         2 for Errors: List all of the errors group by endpoint url.
         3 for Performance Metrics: Average response time for each endpoint.
-        4 for print all logs
+        4 to print all logs
         ");
 
         loop {
@@ -54,7 +54,8 @@ fn main() {
                 // In short, compiler prevented me to change the actual data accidentally inside my functions.
                 "1" => {request_summary(&logs)}
                 "2" => {errors(&logs)}
-
+                "3" => {performance(&logs)}
+                // give a feedback and skip the remaining lines, to ask  a new command.
                 _ => {println!("invalid input, please type 1, 2 or 3.");
                         continue}
             }

@@ -34,7 +34,7 @@ pub(crate) fn request_summary(logs: &Vec<Log>){
 }
 
 pub(crate) fn errors(logs: &Vec<Log>) {
-    // Create an empty HashMap
+    // Create an empty HashMap,
     let mut results = HashMap::new();
 
     // Iterate over the requests
@@ -45,9 +45,10 @@ pub(crate) fn errors(logs: &Vec<Log>) {
 
         // Check if the status code has error
         if status_code >= &400 && status_code <= &599 {
-            // Increment the counter for the endpoint URL in the HashMap
-            // If the key does not exist, insert a default value of 0
-            *results.entry(endpoint_url).or_insert(0) += 1;
+            // Push the log to the vector for the endpoint URL in the HashMap
+            // If the key does not exist, insert a default value of an empty vector
+            // keys are endpoint_url so this means we groupped the data by endpoint_url.
+            results.entry(endpoint_url).or_insert(Vec::new()).push(log);
         }
     }
     let mut selected_command = String::new();
@@ -61,7 +62,7 @@ pub(crate) fn errors(logs: &Vec<Log>) {
         // Trim the input strings and parse the command
         let selected_command = selected_command.trim();
         let selected_filename = selected_filename.trim();
-        let command = selected_command.parse::<u8>().expect("asd");
+        let command = selected_command.parse::<u8>().expect("error when parsing your command");
 
         // Break the loop if the command is 3
         if command == 3 {
@@ -84,13 +85,31 @@ pub(crate) fn errors(logs: &Vec<Log>) {
         let mut buf_writer = BufWriter::new(file);
 
         // Iterate over the HashMap and write the data to the buffer
-        for (endpoint_url, error_count) in results.iter() {
+        for (endpoint_url, logs) in results.iter() {
+            // First, since we are grouping according to endpoint url, for the first entity in result,
+            // we create a line to show which endpoint the following logs belong.
             let line = match command {
-                1 => format!("Endpoint URL: {:?}, Average Response Time: {:?}\n", endpoint_url, error_count ),
-                2 => format!("{:?},{:?}\n", endpoint_url, error_count),
+                1 => format!("Endpoint URL: {:?}\n", endpoint_url),
+                2 => format!("{:?},", endpoint_url),
                 _ => continue,
             };
             buf_writer.write_all(line.as_bytes()).expect("Failed to write to buffer");
+
+            // Iterate over the logs and write the details to the buffer
+            for log in logs {
+                let line = match command {
+                    1 => format!("Timestamp: {:?}, Request Type: {:?}, Status Code: {:?}, Response Time: {:?}\n", log.get_timestamp(),
+                                 log.get_request_type(), log.get_status_code(), log.get_response_time()),
+                    2 => format!("{:?},{:?},{:?},{:?}\n", log.get_timestamp(), log.get_request_type(), log.get_status_code(), log.get_response_time()),
+                    _ => continue,
+                };
+                // I think this is not the best way to do that, but my skill level and time is not enough to stack all of the lines at once and give it to the bufwriter.
+                // Maybe when I update and maintain the code I can do that optimization.
+                buf_writer.write_all(line.as_bytes()).expect("Failed to write to buffer");
+            }
+
+            // Add a new line after each endpoint URL
+            buf_writer.write_all(b"\n").expect("Failed to write to buffer");
         }
 
         // Flush the buffer to write data to the file

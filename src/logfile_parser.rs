@@ -26,8 +26,13 @@ pub fn read(path: &str) -> io::Result<Vec<Log>> {
         let terms: Vec<&str> = line.split_whitespace().collect();
 
         // Assuming LogBuilder and Log types are defined elsewhere
-        let entry: Log = LogBuilder::new().set_time_stamp(if terms.len() > 1 { Some([terms[0], terms[1]].join(" ")) } else { None })
-            .set_request_type(match terms.get(2){
+        let entry: Log = LogBuilder::new()
+            .set_time_stamp(if terms.len() > 1 {
+                Some([terms[0], terms[1]].join(" "))
+            } else {
+                None
+            })
+            .set_request_type(match terms.get(2) {
                 Some(&"GET") => Some(Request::GET),
                 Some(&"POST") => Some(Request::POST),
                 Some(&"DELETE") => Some(Request::DELETE),
@@ -68,23 +73,22 @@ struct LogBuilder {
     response_time: i32,
 }
 
-
 impl Log {
     // Change the return type to &str
     pub fn get_timestamp(&self) -> &str {
         // Return a reference to the field
         &self.timestamp
     }
-    pub fn get_status_code(&self) -> &i16{
-    &self.status_code
-}
-    pub fn get_endpoint_url(&self) -> &String{
+    pub fn get_status_code(&self) -> &i16 {
+        &self.status_code
+    }
+    pub fn get_endpoint_url(&self) -> &String {
         &self.endpoint_url
     }
-    pub fn get_request_type(&self) -> &Request{
+    pub fn get_request_type(&self) -> &Request {
         &self.request_type
     }
-    pub fn get_response_time(&self) -> &i32{
+    pub fn get_response_time(&self) -> &i32 {
         &self.response_time
     }
 }

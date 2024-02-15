@@ -28,11 +28,12 @@ pub fn read(path: &str) -> io::Result<Vec<Log>> {
         // Assuming LogBuilder and Log types are defined elsewhere
         let entry: Log = LogBuilder::new()
             .settimestamp(if terms.len() > 1 { Some([terms[0], terms[1]].join(" ")) } else { None })
-            .setrequest(match terms.get(2) {
+            .setrequest(match terms.get(2).unwrap().to_uppercase() {
                 Some(&"GET") => Some(Request::GET),
                 Some(&"POST") => Some(Request::POST),
                 Some(&"DELETE") => Some(Request::DELETE),
                 Some(&"PUT") => Some(Request::PUT),
+                // If no type is defined, safe default undefined should act.
                 _ => None,
             })
             .setendpoint_url(terms.get(3).map(|s| s.to_string()))

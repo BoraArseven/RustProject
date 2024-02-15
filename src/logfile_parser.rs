@@ -7,7 +7,7 @@ use std::{env, io};
 //for simplicity, for the sake of both users and developers, I made this code use only the logfiles that are inside the project directory. Thus,
 // Users will just type the name of the file.
 #[derive(Debug, Clone)]
-enum Request {
+pub enum Request {
     GET,
     POST,
     PUT,
@@ -49,7 +49,7 @@ fn get_logfile_path(filename: &str) -> PathBuf {
     path.push(filename); // Append the filename to the current directory path
     path
 }
-
+// derive debug is to be able to print with :?
 #[derive(Debug)]
 pub struct Log {
     timestamp: String,
@@ -68,21 +68,24 @@ struct LogBuilder {
     response_time: i32,
 }
 
+
 impl Log {
-    fn new(
-        timestamp: String,
-        request_type: Request,
-        endpoint_url: String,
-        status_code: i16,
-        response_time: i32,
-    ) -> LogBuilder {
-        LogBuilder {
-            timestamp,
-            request_type,
-            endpoint_url,
-            status_code,
-            response_time,
-        }
+    // Change the return type to &str
+    pub fn get_timestamp(&self) -> &str {
+        // Return a reference to the field
+        &self.timestamp
+    }
+    pub fn get_status_code(&self) -> &i16{
+    &self.status_code
+}
+    pub fn get_endpoint_url(&self) -> &String{
+        &self.endpoint_url
+    }
+    pub fn get_request_type(&self) -> &Request{
+        &self.request_type
+    }
+    pub fn get_response_time(&self) -> &i32{
+        &self.response_time
     }
 }
 

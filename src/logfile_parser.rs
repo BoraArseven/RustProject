@@ -44,7 +44,7 @@ pub fn read(path: &str) -> io::Result<Vec<Log>> {
     //I am not confident with this line, I just found on the internet, I was just tried (Ok,logs)
     Ok(logs)
 }
-fn get_logfile_path(filename: &str) -> PathBuf {
+pub fn get_logfile_path(filename: &str) -> PathBuf {
     let mut path = env::current_dir().unwrap(); // Get the current directory
     path.push(filename); // Append the filename to the current directory path
     path

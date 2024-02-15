@@ -79,7 +79,4 @@ fn main() {
             }
         }
     }
-    fn printmalformedlogs (malformed_logs: Vec<String>){
-
-    }
 }

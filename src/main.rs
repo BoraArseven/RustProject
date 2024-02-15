@@ -17,6 +17,8 @@ mod unit_tests;
 // This might reduce the performance since we are calling more functions per log, but generally IO is the real speed limiter when we are accessing files. So the performance affect might be ignorable.
 fn main() {
     loop {
+
+        println!("Please enter the name of the project directory");
         // Read the user input
         let mut input = String::new();
         io::stdin().lock().read_line(&mut input).unwrap();
@@ -35,21 +37,21 @@ fn main() {
                 continue; // Skip the rest of the loop and ask for another input
             }
         };
-        println!("{:?}", logs);
         println!(
-            "Logfile is successfully selected, please select the operation to do: \n \
-        Operations: 'Summary', 'Errors' , 'Performance', 'List_ALl'
+            "Log file is successfully selected, please select the operation to do: "
+       );
+
+        loop {
+            println!(" Operations: 'Summary', 'Errors' , 'Performance', 'List_ALl'
         1 for Summary: how many times each type of request occurred.
         2 for Errors: List all of the errors group by endpoint url.
         3 for Performance Metrics: Average response time for each endpoint.
-        4 to print all logs
-        "
-        );
-
-        loop {
+        4 for printing all logs
+        ");
             let mut selectedcommand = String::new();
             io::stdin().lock().read_line(&mut selectedcommand).unwrap();
             selectedcommand.pop();
+            // Select an option to analyse logs.
             match selectedcommand.as_str() {
                 //since we are just investigating and analysing without changing the actual data, we just passed the address reference of logs to the functions.
                 // In short, compiler prevented me to change the actual data accidentally inside my functions.

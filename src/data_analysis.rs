@@ -3,3 +3,7 @@ use crate::logfile_parser::Log;
 pub(crate) fn request_summary(logs: &Vec<Log>){
 
 }
+
+pub(crate) fn errors(logs: &Vec<Log>){
+
+}

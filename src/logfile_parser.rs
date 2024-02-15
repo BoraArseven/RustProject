@@ -14,8 +14,9 @@ pub enum Request {
     DELETE,
     UNDEFINED,
 }
-pub fn read(path: &str) -> io::Result<Vec<Log>> {
+pub fn read(path: &str) -> io::Result<(Vec<Log>, Vec<String>)> {
     let mut logs: Vec<Log> = Vec::new();
+    let mut malformedlogs : Vec<String> = Vec::new();
     // Get the path to the logfile
     let logfile_path = get_logfile_path(path);
     let f = File::open(logfile_path)?;
@@ -24,30 +25,35 @@ pub fn read(path: &str) -> io::Result<Vec<Log>> {
     for line_result in reader.lines() {
         let line = line_result?;
         let terms: Vec<&str> = line.split_whitespace().collect();
-
+        if terms.len() ==6{
+            let entry: Log = LogBuilder::new()
+                .set_time_stamp(if terms.len() > 1 {
+                    Some([terms[0], terms[1]].join(" "))
+                } else {
+                    None
+                })
+                .set_request_type(match terms.get(2) {
+                    Some(&"GET") => Some(Request::GET),
+                    Some(&"POST") => Some(Request::POST),
+                    Some(&"DELETE") => Some(Request::DELETE),
+                    Some(&"PUT") => Some(Request::PUT),
+                    // If no type is defined, safe default undefined should act.
+                    _ => None,
+                })
+                .set_endpoint_url(terms.get(3).map(|s| s.to_string()))
+                .set_status_code(terms.get(4).and_then(|s| s.parse::<i16>().ok()))
+                .set_response_time(terms.get(5).and_then(|s| s.parse::<i32>().ok()))
+                .build();
+            logs.push(entry);
+        }
+        else{
+            malformedlogs.push(line);
+        }
         // Assuming LogBuilder and Log types are defined elsewhere
-        let entry: Log = LogBuilder::new()
-            .set_time_stamp(if terms.len() > 1 {
-                Some([terms[0], terms[1]].join(" "))
-            } else {
-                None
-            })
-            .set_request_type(match terms.get(2) {
-                Some(&"GET") => Some(Request::GET),
-                Some(&"POST") => Some(Request::POST),
-                Some(&"DELETE") => Some(Request::DELETE),
-                Some(&"PUT") => Some(Request::PUT),
-                // If no type is defined, safe default undefined should act.
-                _ => None,
-            })
-            .set_endpoint_url(terms.get(3).map(|s| s.to_string()))
-            .set_status_code(terms.get(4).and_then(|s| s.parse::<i16>().ok()))
-            .set_response_time(terms.get(5).and_then(|s| s.parse::<i32>().ok()))
-            .build();
-        logs.push(entry);
+
     }
     //I am not confident with this line, I just found on the internet, I was just tried (Ok,logs)
-    Ok(logs)
+    Ok((logs,malformedlogs))
 }
 pub fn get_logfile_path(filename: &str) -> PathBuf {
     let mut path = env::current_dir().unwrap(); // Get the current directory
@@ -106,12 +112,17 @@ impl LogBuilder {
     }
     //setters for each field
     fn set_time_stamp(&mut self, timestamp: Option<String>) -> &mut Self {
-        self.timestamp = timestamp.unwrap();
+        match timestamp {
+            Some(t) => self.timestamp = t,
+            None => self.timestamp = String::from("Error"),
+        }
         self
     }
     fn set_request_type(&mut self, request_type: Option<Request>) -> &mut Self {
         self.request_type = request_type.unwrap();
+
         self
+
     }
     fn set_endpoint_url(&mut self, endpoint_url: Option<String>) -> &mut Self {
         self.endpoint_url = endpoint_url.unwrap();

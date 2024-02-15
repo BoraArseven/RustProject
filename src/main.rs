@@ -32,7 +32,14 @@ fn main() {
         };
         // Call your function and match the result
         let logs = match read(&input) {
-            Ok(logs) => logs, // Return the logs vector from the match
+            Ok(logs) => logs.0, // Return the logs vector from the match
+            Err(e) => {
+                println!("Error: {}", e);
+                continue; // Skip the rest of the loop and ask for another input
+            }
+        };
+        let malformedlogs = match read(&input) {
+            Ok(logs) => logs.1, // Return the logs vector from the match
             Err(e) => {
                 println!("Error: {}", e);
                 continue; // Skip the rest of the loop and ask for another input
@@ -47,6 +54,7 @@ fn main() {
         2 for Errors: List all of the errors group by endpoint url.
         3 for Performance Metrics: Average response time for each endpoint.
         4 for printing all logs
+        5 for printing all malformed logs
         "
             );
             let mut selectedcommand = String::new();
@@ -60,6 +68,9 @@ fn main() {
                 "2" => errors(&logs),
                 "3" => performance(&logs),
                 "4" => print_all_logs(&logs),
+                "5" => { for log in &malformedlogs{
+                    println!("{:?}", log);
+                } },
                 // give a feedback and skip the remaining lines, to ask  a new command.
                 _ => {
                     println!("invalid input, please type 1, 2 or 3.");
@@ -67,5 +78,8 @@ fn main() {
                 }
             }
         }
+    }
+    fn printmalformedlogs (malformed_logs: Vec<String>){
+
     }
 }

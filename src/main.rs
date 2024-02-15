@@ -1,5 +1,5 @@
 use crate::data_analysis::{errors, performance, print_all_logs, request_summary};
-use crate::logfile_parser::{read, Log};
+use crate::logfile_parser::read;
 use std::io;
 use std::io::BufRead;
 
@@ -17,8 +17,9 @@ mod unit_tests;
 // This might reduce the performance since we are calling more functions per log, but generally IO is the real speed limiter when we are accessing files. So the performance affect might be ignorable.
 fn main() {
     loop {
-
-        println!("Please enter the name of the project directory, for example 'log.txt', './log.txt'");
+        println!(
+            "Please enter the name of the project directory, for example 'log.txt', './log.txt'"
+        );
         // Read the user input
         let mut input = String::new();
         io::stdin().lock().read_line(&mut input).unwrap();
@@ -37,17 +38,17 @@ fn main() {
                 continue; // Skip the rest of the loop and ask for another input
             }
         };
-        println!(
-            "Log file is successfully selected, please select the operation to do: "
-       );
+        println!("Log file is successfully selected, please select the operation to do: ");
 
         loop {
-            println!(" Operations: 'Summary', 'Errors' , 'Performance', 'List_ALl'
+            println!(
+                " Operations: 'Summary', 'Errors' , 'Performance', 'List_ALl'
         1 for Summary: how many times each type of request occurred.
         2 for Errors: List all of the errors group by endpoint url.
         3 for Performance Metrics: Average response time for each endpoint.
         4 for printing all logs
-        ");
+        "
+            );
             let mut selectedcommand = String::new();
             io::stdin().lock().read_line(&mut selectedcommand).unwrap();
             selectedcommand.pop();

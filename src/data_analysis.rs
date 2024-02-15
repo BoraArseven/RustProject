@@ -50,6 +50,55 @@ pub(crate) fn errors(logs: &Vec<Log>) {
             *results.entry(endpoint_url).or_insert(0) += 1;
         }
     }
+    let mut selected_command = String::new();
+    let mut selected_filename = String::new();
+    loop {
+        println!("Type 1 for txt output, 2 for csv, 3 to abort");
+        io::stdin().lock().read_line(&mut selected_command).unwrap();
+        println!("Please give a filename");
+        io::stdin().lock().read_line(&mut selected_filename).unwrap();
+
+        // Trim the input strings and parse the command
+        let selected_command = selected_command.trim();
+        let selected_filename = selected_filename.trim();
+        let command = selected_command.parse::<u8>().expect("asd");
+
+        // Break the loop if the command is 3
+        if command == 3 {
+            break;
+        }
+
+
+        // Create a path with the given filename and the appropriate extension
+        let path = match command {
+            1 => get_logfile_path(&format!("{}{}" ,selected_filename,  ".txt")),
+            2 => get_logfile_path(&format!("{}{}" ,selected_filename,  ".csv")),
+            3 => break,
+            _ => continue,
+        };
+
+        // Create a file with the given path
+        let file = File::create(&path).expect("Failed to create file");
+
+        // Create a BufWriter with the file
+        let mut buf_writer = BufWriter::new(file);
+
+        // Iterate over the HashMap and write the data to the buffer
+        for (endpoint_url, error_count) in results.iter() {
+            let line = match command {
+                1 => format!("Endpoint URL: {:?}, Average Response Time: {:?}\n", endpoint_url, error_count ),
+                2 => format!("{:?},{:?}\n", endpoint_url, error_count),
+                _ => continue,
+            };
+            buf_writer.write_all(line.as_bytes()).expect("Failed to write to buffer");
+        }
+
+        // Flush the buffer to write data to the file
+        buf_writer.flush().expect("Failed to flush buffer");
+
+        println!("File created successfully!");
+        break
+    }
     println!("{:?}",results);
 }
 pub(crate) fn performance(logs: &Vec<Log>) {

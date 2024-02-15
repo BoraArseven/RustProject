@@ -18,13 +18,13 @@ mod unit_tests;
 fn main() {
     loop {
 
-        println!("Please enter the name of the project directory");
+        println!("Please enter the name of the project directory, for example 'log.txt', './log.txt'");
         // Read the user input
         let mut input = String::new();
         io::stdin().lock().read_line(&mut input).unwrap();
         // Remove the newline character
         input.pop();
-        // if nothing as input, ignore
+        // if nothing as input, ignore and ask again.
         match input.as_str() {
             "" => continue,
             _ => {}

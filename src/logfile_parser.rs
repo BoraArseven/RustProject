@@ -23,12 +23,13 @@ pub fn read(path: &str) -> io::Result<(Vec<Log>, Vec<String>)> {
     let reader = BufReader::new(f);
 
     for line_result in reader.lines() {
+
         let line = line_result?;
         let terms: Vec<&str> = line.split_whitespace().collect();
         if terms.len() ==6{
             let entry: Log = LogBuilder::new()
                 .set_time_stamp(if terms.len() > 1 {
-                    Some([terms[0], terms[1]].join(" "))
+                    Some([terms.get(0), terms.get(1)].join(" "))
                 } else {
                     None
                 })
@@ -49,8 +50,6 @@ pub fn read(path: &str) -> io::Result<(Vec<Log>, Vec<String>)> {
         else{
             malformedlogs.push(line);
         }
-        // Assuming LogBuilder and Log types are defined elsewhere
-
     }
     //I am not confident with this line, I just found on the internet, I was just tried (Ok,logs)
     Ok((logs,malformedlogs))

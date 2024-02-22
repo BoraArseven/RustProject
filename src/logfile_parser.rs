@@ -29,7 +29,7 @@ pub fn read(path: &str) -> io::Result<(Vec<Log>, Vec<String>)> {
         if terms.len() ==6{
             let entry: Log = LogBuilder::new()
                 .set_time_stamp(if terms.len() > 1 {
-                    Some([terms.get(0), terms.get(1)].join(" "))
+                    Some([terms[0], terms[1]].join(" "))
                 } else {
                     None
                 })
@@ -69,7 +69,7 @@ pub struct Log {
     status_code: i16,
     response_time: i32,
 }
-struct LogBuilder {
+pub(crate) struct LogBuilder {
     timestamp: String,
     request_type: Request,
     endpoint_url: String,
@@ -110,33 +110,33 @@ impl LogBuilder {
         }
     }
     //setters for each field
-    fn set_time_stamp(&mut self, timestamp: Option<String>) -> &mut Self {
+    pub(crate) fn set_time_stamp(&mut self, timestamp: Option<String>) -> &mut Self {
         match timestamp {
             Some(t) => self.timestamp = t,
             None => self.timestamp = String::from("Error"),
         }
         self
     }
-    fn set_request_type(&mut self, request_type: Option<Request>) -> &mut Self {
+    pub(crate) fn set_request_type(&mut self, request_type: Option<Request>) -> &mut Self {
         self.request_type = request_type.unwrap();
 
         self
 
     }
-    fn set_endpoint_url(&mut self, endpoint_url: Option<String>) -> &mut Self {
+    pub(crate) fn set_endpoint_url(&mut self, endpoint_url: Option<String>) -> &mut Self {
         self.endpoint_url = endpoint_url.unwrap();
         self
     }
-    fn set_status_code(&mut self, status_code: Option<i16>) -> &mut Self {
+    pub(crate) fn set_status_code(&mut self, status_code: Option<i16>) -> &mut Self {
         self.status_code = status_code.unwrap();
         self
     }
-    fn set_response_time(&mut self, response_time: Option<i32>) -> &mut Self {
+    pub(crate) fn set_response_time(&mut self, response_time: Option<i32>) -> &mut Self {
         self.response_time = response_time.unwrap();
         self
     }
     // I am not sure about clone(), maybe it might be a bad practice, I need a feedback here.
-    fn build(&mut self) -> Log {
+    pub(crate) fn build(&mut self) -> Log {
         Log {
             request_type: self.request_type.clone(),
             timestamp: self.timestamp.clone(),

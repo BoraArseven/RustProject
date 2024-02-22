@@ -1,19 +1,11 @@
 extern crate chrono;
 extern crate tokio;
 use std::collections::HashMap;
-
-use std::io;
-use std::io::{BufRead, BufWriter, Write};
 use chrono::Utc;
-use std::process::{Command, Output};
-
-
 use crate::logfile_parser::Request;
-use crate::logfile_parser::{get_logfile_path, Log, LogBuilder};
+use crate::logfile_parser::{get_logfile_path, Log};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use tokio::net::TcpStream;
-use std::time:: {Duration, Instant};
 
 #[derive(Debug)]
 struct Count{
@@ -208,16 +200,12 @@ pub(crate) async fn performance(logs: &Vec<Log>, command: u8) {
             endpoint_url, division
         )
     }
-    let mut selected_command = String::new();
-    let mut selected_filename = String::new();
-    // I am not sure if it is good approach
-
         let dt = Utc::now();
         // Convert it to a timestamp in seconds
         let timestamp: i64 = dt.timestamp();
         // Convert it to a string
         let timestamp_as_string = timestamp.to_string();
-        let mut selected_filename = format!("{}{}", "Performance", timestamp_as_string);
+        let selected_filename = format!("{}{}", "Performance", timestamp_as_string);
         // Trim the input strings and parse the command
         // Create a path with the given filename and the appropriate extension
         let path = match command {

@@ -1,24 +1,43 @@
+extern crate chrono;
+extern crate tokio;
 use std::collections::HashMap;
-use std::fs::File;
+
 use std::io;
 use std::io::{BufRead, BufWriter, Write};
+use chrono::Utc;
+use std::process::{Command, Output};
+
 
 use crate::logfile_parser::Request;
-use crate::logfile_parser::{get_logfile_path, Log};
+use crate::logfile_parser::{get_logfile_path, Log, LogBuilder};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+use tokio::net::TcpStream;
+use std::time:: {Duration, Instant};
+
+#[derive(Debug)]
+struct Count{
+    get: i64,
+    post: i64,
+    delete: i64,
+    put: i64,
+    undefined: i64,
+}
+
 // I might be able to use multithreading since our references are not mutable since we are not reading.
-pub(crate) fn request_summary(logs: &Vec<Log>) {
+pub(crate) async fn request_summary(logs: &Vec<Log>, command: u8)  {
     //[get,post,delete,put] in order.
-    let mut counts = [0i64; 5];
+    let mut counts = Count{get: 0, post: 0, delete: 0, put: 0, undefined: 0};
 
     for log in logs {
         // Call the get method on the log reference
         let request_type = log.get_request_type();
         match request_type {
-            Request::GET => counts[0] += 1,
-            Request::POST => counts[1] += 1,
-            Request::DELETE => counts[2] += 1,
-            Request::PUT => counts[3] += 1,
-            Request::UNDEFINED => counts[4] += 1,
+            Request::GET => counts.get += 1,
+            Request::POST => counts.post += 1,
+            Request::DELETE => counts.delete += 1,
+            Request::PUT => counts.put += 1,
+            Request::UNDEFINED => counts.undefined += 1,
             // If no type is defined, safe default undefined should act.
             _ => continue,
         }
@@ -30,64 +49,63 @@ pub(crate) fn request_summary(logs: &Vec<Log>) {
     DELETE: {:?}
     PUT: {:?}
     FAULTY: {:?}",
-        counts[0], counts[1], counts[2], counts[3], counts[4]
+        counts.get, counts.post, counts.delete, counts.put, counts.undefined
     );
-    let mut selected_command = String::new();
-    let mut selected_filename = String::new();
-    loop {
-        println!("Type 1 for txt output, 2 for csv, 3 to abort");
-        io::stdin().lock().read_line(&mut selected_command).unwrap();
-        println!("Please give a filename");
-        io::stdin()
-            .lock()
-            .read_line(&mut selected_filename)
-            .unwrap();
+   print_to_file(&counts, command).await;
+}
 
-        // Trim the input strings and parse the command
-        let selected_command = selected_command.trim();
-        let selected_filename = selected_filename.trim();
-        let command = selected_command
-            .parse::<u8>()
-            .expect("error when parsing your command");
+async fn print_to_file(mut counts: &Count, command: u8) {
+    let dt = Utc::now();
+    // Convert it to a timestamp in seconds
+    let timestamp: i64 = dt.timestamp();
+    // Convert it to a string
+    let timestamp_as_string = timestamp.to_string();
+    let mut selected_filename = format!("{}{}", "Request_Summary", timestamp_as_string);
 
-        // Break the loop if the command is 3
-        if command == 3 {
-            break;
+    let path = match command {
+        1 => get_logfile_path(&format!("{}{}", selected_filename, ".txt")),
+        2 => get_logfile_path(&format!("{}{}", selected_filename, ".csv")),
+        _ => panic!("Invalid command"),
+    };
+
+    // Create a file with the given path
+    let mut file = File::create(&path)
+        .await
+        .expect("Failed to create file");
+    // Create a line with the counts
+    let line = match command {
+        1 => format!(
+            "Get: {}\nPost: {}\nDelete: {}\nPUT: {}\nFAULTY: {}",
+            counts.get, counts.post, counts.delete, counts.put, counts.undefined
+        ),
+        2 => format!(
+            "GET,POST,DELETE,PUT,FAULTY\n{},{},{},{},{}",
+            counts.get, counts.post, counts.delete, counts.put, counts.undefined
+        ),
+        _ => panic!("Invalid_Command_When_Writing_File"),
+    };
+
+    // Write the line to the file asynchronously
+    // Use catch_unwind to catch any panics
+    let data = line.as_bytes(); // Move the data outside the closure
+    let result = std::panic::catch_unwind(|| async {
+        data // Pass the data as an argument
+    });
+    file.write_all(data) // Write the data to the file after catching the panic
+        .await
+        .expect("Could not write to file");
+    // Handle the result
+    match result {
+        Ok(_) => println!("Written to the file successfully"),
+        Err(e) => {
+            // You can do whatever you want with the error here
+            // For example, log it or retry the operation
+            eprintln!("An error occurred while writing to the file: {:?}", e);
         }
-
-        // Create a path with the given filename and the appropriate extension
-        let path = match command {
-            1 => get_logfile_path(&format!("{}{}", selected_filename, ".txt")),
-            2 => get_logfile_path(&format!("{}{}", selected_filename, ".csv")),
-            3 => break,
-            _ => continue,
-        };
-
-        // Create a file with the given path
-        let file = File::create(&path).expect("Failed to create file");
-        let mut buf_writer = BufWriter::new(file);
-        // Create a BufWriter with the filea
-        let line = match command {
-            1 => String::from(format!(
-                "Get: {}\nPost: {}\nDelete: {}\nPUT: {}\nFAULTY: {}",
-                counts[0], counts[1], counts[2], counts[3], counts[4]
-            )),
-            2 => String::from(format!(
-                "GET,POST,DELETE,PUT,FAULTY\n{},{},{},{},{}",
-                counts[0], counts[1], counts[2], counts[3], counts[4]
-            )),
-            _ => continue,
-        };
-
-        buf_writer
-            .write(line.as_ref())
-            .expect("Could not write to file");
-        println!("Written to the file successfully");
-        break;
     }
 }
 
-pub(crate) fn errors(logs: &Vec<Log>) {
+pub(crate) async fn errors(logs: &Vec<Log>, command: u8) {
     // Create an empty HashMap,
     let mut results = HashMap::new();
 
@@ -101,46 +119,29 @@ pub(crate) fn errors(logs: &Vec<Log>) {
         if status_code >= &400 && status_code <= &599 {
             // Push the log to the vector for the endpoint URL in the HashMap
             // If the key does not exist, insert a default value of an empty vector
-            // keys are endpoint_url so this means we groupped the data by endpoint_url.
+            // keys are endpoint_url so this means we grouped the data by endpoint_url.
             results.entry(endpoint_url).or_insert(Vec::new()).push(log);
         }
     }
-    let mut selected_command = String::new();
-    let mut selected_filename = String::new();
-    loop {
-        println!("Type 1 for txt output, 2 for csv, 3 to abort");
-        io::stdin().lock().read_line(&mut selected_command).unwrap();
-        println!("Please give a filename");
-        io::stdin()
-            .lock()
-            .read_line(&mut selected_filename)
-            .unwrap();
-
-        // Trim the input strings and parse the command
-        let selected_command = selected_command.trim();
-        let selected_filename = selected_filename.trim();
-        let command = selected_command
-            .parse::<u8>()
-            .expect("error when parsing your command");
-
-        // Break the loop if the command is 3
-        if command == 3 {
-            break;
-        }
+        let dt = Utc::now();
+        // Convert it to a timestamp in seconds
+        let timestamp: i64 = dt.timestamp();
+        // Convert it to a string
+        let timestamp_as_string = timestamp.to_string();
+        let selected_filename = format!("{}{}", "errors", timestamp_as_string);
 
         // Create a path with the given filename and the appropriate extension
         let path = match command {
             1 => get_logfile_path(&format!("{}{}", selected_filename, ".txt")),
             2 => get_logfile_path(&format!("{}{}", selected_filename, ".csv")),
-            3 => break,
-            _ => continue,
+            _ => panic!("Invalid command while writing to file"),
         };
 
         // Create a file with the given path
-        let file = File::create(&path).expect("Failed to create file");
+        let file = File::create(&path).await.expect("Failed to create file");
 
-        // Create a BufWriter with the file
-        let mut buf_writer = BufWriter::new(file);
+        // Create a tokio BufWriter with the file
+        let mut buf_writer = tokio::io::BufWriter::new(file);
 
         // Iterate over the HashMap and write the data to the buffer
         for (endpoint_url, logs) in results.iter() {
@@ -153,6 +154,7 @@ pub(crate) fn errors(logs: &Vec<Log>) {
             };
             buf_writer
                 .write_all(line.as_bytes())
+                .await // Use await here
                 .expect("Failed to write to buffer");
 
             // Iterate over the logs and write the details to the buffer
@@ -167,24 +169,20 @@ pub(crate) fn errors(logs: &Vec<Log>) {
                 // Maybe when I update and maintain the code I can do that optimization.
                 buf_writer
                     .write_all(line.as_bytes())
+                    .await // Use await here
                     .expect("Failed to write to buffer");
             }
 
             // Add a new line after each endpoint URL
             buf_writer
                 .write_all(b"\n")
+                .await // Use await here
                 .expect("Failed to write to buffer");
         }
 
-        // Flush the buffer to write data to the file
-        buf_writer.flush().expect("Failed to flush buffer");
-
-        println!("File created successfully!");
-        break;
-    }
-    println!("{:?}", results);
 }
-pub(crate) fn performance(logs: &Vec<Log>) {
+
+pub(crate) async fn performance(logs: &Vec<Log>, command: u8) {
     // Create an empty HashMap
     let mut results = HashMap::new();
 
@@ -213,38 +211,26 @@ pub(crate) fn performance(logs: &Vec<Log>) {
     let mut selected_command = String::new();
     let mut selected_filename = String::new();
     // I am not sure if it is good approach
-    loop {
-        println!("Type 1 for txt output, 2 for csv, 3 to abort");
-        io::stdin().lock().read_line(&mut selected_command).unwrap();
-        println!("Please give a filename");
-        io::stdin()
-            .lock()
-            .read_line(&mut selected_filename)
-            .unwrap();
 
+        let dt = Utc::now();
+        // Convert it to a timestamp in seconds
+        let timestamp: i64 = dt.timestamp();
+        // Convert it to a string
+        let timestamp_as_string = timestamp.to_string();
+        let mut selected_filename = format!("{}{}", "Performance", timestamp_as_string);
         // Trim the input strings and parse the command
-        let selected_command = selected_command.trim();
-        let selected_filename = selected_filename.trim();
-        let command = selected_command.parse::<u8>().expect("asd");
-
-        // Break the loop if the command is 3
-        if command == 3 {
-            break;
-        }
-
         // Create a path with the given filename and the appropriate extension
         let path = match command {
             1 => get_logfile_path(&format!("{}{}", selected_filename, ".txt")),
             2 => get_logfile_path(&format!("{}{}", selected_filename, ".csv")),
-            3 => break,
-            _ => continue,
+            _ => panic!("Invalid command, this command must not be able to reached here."),
         };
 
         // Create a file with the given path
-        let file = File::create(&path).expect("Failed to create file");
+        let file = File::create(&path).await.expect("Failed to create file"); // Use tokio::fs::File and await
 
-        // Create a BufWriter with the file
-        let mut buf_writer = BufWriter::new(file);
+        // Create a tokio BufWriter with the file
+        let mut buf_writer = tokio::io::BufWriter::new(file); // Use tokio::io::BufWriter
 
         // Iterate over the HashMap and write the data to the buffer
         for (endpoint_url, (sum, count)) in results.iter() {
@@ -259,20 +245,71 @@ pub(crate) fn performance(logs: &Vec<Log>) {
             };
             buf_writer
                 .write_all(line.as_bytes())
+                .await // Use await here
                 .expect("Failed to write to buffer");
         }
 
         // Flush the buffer to write data to the file
-        buf_writer.flush().expect("Failed to flush buffer");
+        buf_writer.flush().await.expect("Failed to flush buffer"); // Use await here
 
         println!("File created successfully!");
-        break;
-    }
+
+
 }
+
 
 pub(crate) fn print_all_logs(logs: &Vec<Log>) {
     for log in logs {
         // Use println! with {:?} to print each log
         println!("{:?}", log);
     }
+}/*
+#[cfg(test)]
+mod tests {
+    use crate::data_analysis::{errors, request_summary};
+    use crate::logfile_parser::{LogBuilder, Request};
+
+    #[test]
+    fn test_error_count() {
+        // Test vector is created by github copilot.
+        let logs = vec![
+            LogBuilder::new()
+                .set_time_stamp(Some("2021-01-01 00:00:00".to_string()))
+                .set_endpoint_url(Some("https://www.google.com".to_string()))
+                .set_status_code(Some(200))
+                .set_response_time(Some(100))
+                .build(),
+            LogBuilder::new()
+                .set_time_stamp(Some("2021-01-01 00:00:00".to_string()))
+                .set_request_type(Some(Request::POST))
+                .set_endpoint_url(Some("https://www.google.com".to_string()))
+                .set_status_code(Some(404))
+                .set_response_time(Some(100))
+                .build(),
+            LogBuilder::new()
+                .set_time_stamp(Some("2021-01-01 00:00:00".to_string()))
+                .set_request_type(Some(Request::GET))
+                .set_endpoint_url(Some("https://www.google.com".to_string()))
+                .set_status_code(Some(500))
+                .set_response_time(Some(100))
+                .build(),
+            LogBuilder::new()
+                .set_time_stamp(Some("2021-01-01 00:00:00".to_string()))
+                .set_request_type(Some(Request::GET))
+                .set_endpoint_url(Some("https://www.google.com".to_string()))
+                .set_status_code(Some(200))
+                .set_response_time(Some(100))
+                .build(),
+            LogBuilder::new()
+                .set_time_stamp(Some("2021-01-01 00:00:00".to_string()))
+                .set_request_type(Some(Request::GET))
+                .set_endpoint_url(Some("https://www.google.com".to_string()))
+                .set_status_code(Some(404))
+                .set_response_time(Some(100))
+                .build(),
+        ];
+    let counts : [i64;5] = [4,1,0,0,0];
+        assert_eq!(request_summary(&logs, 0), counts);
+    }
 }
+*/

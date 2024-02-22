@@ -1,10 +1,10 @@
 extern crate chrono;
 use crate::data_analysis::{errors, performance, print_all_logs, request_summary};
-use crate::logfile_parser::{ read};
+use crate::logfile_parser::read;
 use std::fmt::Debug;
 
 use std::io;
-use std::io::{BufRead};
+use std::io::BufRead;
 
 mod data_analysis;
 mod logfile_parser;
@@ -40,7 +40,7 @@ async fn main() {
             "" => continue,
             _ => {}
         };
-        
+
         // Call your function and match the result
         let logs = match read(&input) {
             Ok(logs) => logs.0, // Return the logs vector from the match
@@ -56,7 +56,9 @@ async fn main() {
                 continue; // Skip the rest of the loop and ask for another input
             }
         };
-        println!("Log file is successfully selected, before processing, please select the output type ");
+        println!(
+            "Log file is successfully selected, before processing, please select the output type "
+        );
         let mut output_file_type = String::new();
         let mut command: u8;
         loop {
@@ -81,9 +83,8 @@ async fn main() {
                 2 => break,
                 _ => continue,
             }
-       
         }
-        
+
         println!("please select the operation to do: ");
 
         loop {
@@ -96,9 +97,7 @@ async fn main() {
         5 for printing all malformed logs
         "
             );
-            
-            
-            
+
             let mut selectedcommand = String::new();
             io::stdin().lock().read_line(&mut selectedcommand).unwrap();
             selectedcommand.pop();
@@ -120,9 +119,7 @@ async fn main() {
                     continue;
                 }
             };
-                // give a feedback and skip the remaining lines, to ask  a new command.
-
-            }
+            // give a feedback and skip the remaining lines, to ask  a new command.
         }
     }
-
+}

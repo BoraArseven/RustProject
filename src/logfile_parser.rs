@@ -16,17 +16,16 @@ pub enum Request {
 }
 pub fn read(path: &str) -> io::Result<(Vec<Log>, Vec<String>)> {
     let mut logs: Vec<Log> = Vec::new();
-    let mut malformedlogs : Vec<String> = Vec::new();
+    let mut malformedlogs: Vec<String> = Vec::new();
     // Get the path to the logfile
     let logfile_path = get_logfile_path(path);
     let f = File::open(logfile_path)?;
     let reader = BufReader::new(f);
 
     for line_result in reader.lines() {
-
         let line = line_result?;
         let terms: Vec<&str> = line.split_whitespace().collect();
-        if terms.len() ==6{
+        if terms.len() == 6 {
             let entry: Log = LogBuilder::new()
                 .set_time_stamp(if terms.len() > 1 {
                     Some([terms[0], terms[1]].join(" "))
@@ -46,13 +45,12 @@ pub fn read(path: &str) -> io::Result<(Vec<Log>, Vec<String>)> {
                 .set_response_time(terms.get(5).and_then(|s| s.parse::<i32>().ok()))
                 .build();
             logs.push(entry);
-        }
-        else{
+        } else {
             malformedlogs.push(line);
         }
     }
     //I am not confident with this line, I just found on the internet, I was just tried (Ok,logs)
-    Ok((logs,malformedlogs))
+    Ok((logs, malformedlogs))
 }
 pub fn get_logfile_path(filename: &str) -> PathBuf {
     let mut path = env::current_dir().unwrap(); // Get the current directory
@@ -121,7 +119,6 @@ impl LogBuilder {
         self.request_type = request_type.unwrap();
 
         self
-
     }
     pub(crate) fn set_endpoint_url(&mut self, endpoint_url: Option<String>) -> &mut Self {
         self.endpoint_url = endpoint_url.unwrap();

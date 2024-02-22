@@ -36,8 +36,6 @@ pub(crate) async fn request_summary(logs: &Vec<Log>, command: u8) {
             Request::DELETE => counts.delete += 1,
             Request::PUT => counts.put += 1,
             Request::UNDEFINED => counts.undefined += 1,
-            // If no type is defined, safe default undefined should act.
-            _ => continue,
         }
     }
     println!(
@@ -52,13 +50,13 @@ pub(crate) async fn request_summary(logs: &Vec<Log>, command: u8) {
     print_to_file(&counts, command).await;
 }
 
-async fn print_to_file(mut counts: &Count, command: u8) {
+async fn print_to_file( counts: &Count, command: u8) {
     let dt = Utc::now();
     // Convert it to a timestamp in seconds
     let timestamp: i64 = dt.timestamp();
     // Convert it to a string
     let timestamp_as_string = timestamp.to_string();
-    let mut selected_filename = format!("{}{}", "Request_Summary", timestamp_as_string);
+    let selected_filename = format!("{}{}", "Request_Summary", timestamp_as_string);
 
     let path = match command {
         1 => get_logfile_path(&format!("{}{}", selected_filename, ".txt")),

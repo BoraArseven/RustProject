@@ -1,8 +1,6 @@
 extern crate chrono;
 use crate::data_analysis::{errors, performance, print_all_logs, request_summary};
 use crate::logfile_parser::read;
-use std::fmt::Debug;
-
 use std::io;
 use std::io::BufRead;
 
@@ -13,9 +11,6 @@ mod logfile_parser;
 // I added an undefined state where there are errors in the request type.
 // I got an error there since I forgot to derive Debug
 
-// Disclaimer: Before this project, the biggest project I did is implementation of builder pattern, and implementation of structs etc. (I just jumped to the multithreading since I found an interesting problem). I even use enums in this project first time. ()
-// I have found that builder pattern is a good match for that logfile project, since I think it is valuable to be maintainable, so with builder pattern we can change the structure of the logs easier.
-// So, I am using my old builder pattern trial project as a starting template, with changes.
 // This might reduce the performance since we are calling more functions per log, but generally IO is the real speed limiter when we are accessing files. So the performance affect might be ignorable.
 //From Rust Documentation: OS threads are suitable for a small number of tasks, since threads come with CPU and memory overhead.
 // Spawning and switching between threads is quite expensive as even idle threads consume system resources.
@@ -23,7 +18,10 @@ mod logfile_parser;
 // without significant code changes—no particular programming model is required. In some operating systems,
 // you can also change the priority of a thread, which is useful for drivers and other latency sensitive applications.
 //
-// Async provides significantly reduced CPU and memory overhead, especially for workloads with a large amount of IO-bound tasks, such as servers and databases. All else equal, you can have orders of magnitude more tasks than OS threads, because an async runtime uses a small amount of (expensive) threads to handle a large amount of (cheap) tasks. However, async Rust results in larger binary blobs due to the state machines generated from async functions and since each executable bundles an async runtime.
+// Async provides significantly reduced CPU and memory overhead, especially for workloads with a large amount of IO-bound tasks, such as servers and databases.
+// All else equal, you can have orders of magnitude more tasks than OS threads, because an async runtime uses a small amount of (expensive) threads to handle a
+// large amount of (cheap) tasks. However, async Rust results in larger binary blobs due to the state machines generated from async functions
+// and since each executable bundles an async runtime.
 #[tokio::main]
 async fn main() {
     loop {
